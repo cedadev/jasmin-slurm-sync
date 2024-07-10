@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "jasmin-slurm-sync"
+version = "0.1.0"
+description = ""
+authors = ["Alex Manning <alexander.manning@stfc.ac.uk>"]
+license = "BSD-3-Clause"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10.9"
+#jasmin_account_api_client = { git = "https://github.com/cedadev/jasmin-account-api-client.git", subdirectory = "jasmin-account-api-client"}
+typeguard = "^4.3.0"
+ldap3 = "^2.9.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
