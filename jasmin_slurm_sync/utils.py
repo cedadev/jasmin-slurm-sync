@@ -1,11 +1,13 @@
 import logging
 import subprocess as sp
+import time
+import typing
 
 logger = logging.getLogger(__name__)
 
 
-def run_ratelimited(self, *args, **kwargs):
-    """Wrapper to call subprocess to call a slurm command.
+def run_ratelimited(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    """Call subprocess to call a slurm command.
 
     Enforces rate limiting.
     """

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class SLURMSyncer:
     """Sync users' SLURM Accounts."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise a connection to the jasmin acounts portal."""
         self.settings = settings.SyncSettings()
         self.ldap_server = ldap3.Server(
@@ -30,7 +30,7 @@ class SLURMSyncer:
         )
 
     @functools.cached_property
-    def all_ldap_users(self):
+    def all_ldap_users(self) -> typing.Generator[dict[str, typing.Any], None, None]:
         """Get the list of users from the JASMIN accounts portal."""
         _status, _result, response, _request = self.ldap_conn.search(
             self.settings.ldap_search_base,
