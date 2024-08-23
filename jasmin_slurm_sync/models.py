@@ -1,9 +1,10 @@
 import functools
 import typing
 
-from . import settings as settings_module, utils
+from . import settings as settings_module, utils, errors
 import itertools
 import time
+import pwd
 
 
 class User:
@@ -11,6 +12,7 @@ class User:
 
     def __init__(
         self,
+        username: str,
         ldap_user: dict[str, typing.Any],
         slurm_accounts: set[str],
         settings: settings_module.SettingsSchema,
@@ -66,6 +68,14 @@ class User:
 
     def sync_slurm_accounts(self) -> None:
         """Do a full sync of the user's SLURM accounts."""
+        # If the user does not exist in linux, SLURM accounts should not be synced for the user.
+        try:
+            pws.getpwnam(username)
+        except KeyError as err:
+            print(f"User {username} does not exist. Not syncing SLURM accounts.")
+            raise errors.NoUnixUser from err
+
+        # Do the sync.
         for account in self.to_be_added:
             self.add_user_to_account(account)
         for account in self.to_be_removed:
