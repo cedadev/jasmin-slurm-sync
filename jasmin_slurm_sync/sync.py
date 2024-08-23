@@ -4,9 +4,9 @@ import typing
 
 import ldap3
 
-from . import models, settings
-import subprocess as sp
+from . import models, settings,utils
 import collections
+import utils
 
 
 class SLURMSyncer:
@@ -47,7 +47,7 @@ class SLURMSyncer:
             "format=user%50,account%50",
             "--noheader",
         ]
-        cmd_output = sp.run(args, capture_output=True, check=True)
+        cmd_output = utils.run_ratelimited(args, capture_output=True, check=True)
         # sacctmgr returns a newline seperated list of strings,
         # padded to 50 characters as specified above.
         # padding is necessary to ensure no account names are trucated.

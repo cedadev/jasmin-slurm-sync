@@ -1,9 +1,9 @@
 import functools
-import subprocess as sp
 import typing
 
-from . import settings as settings_module
+from . import settings as settings_module, utils
 import itertools
+import time
 
 
 class User:
@@ -50,7 +50,7 @@ class User:
         if account in self.managed_slurm_accounts:
             args = ["sacctmgr", "-i", "add", "user", self.username, f"account={account}"]
             print(" ".join(args))
-            # sp.run(args, capture_output=False, check=True)
+            # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
             print(f"Not adding {self.username} to {account}, because {account} is not managed.")
             print(list(self.managed_slurm_accounts))
@@ -60,7 +60,7 @@ class User:
         if account in self.managed_slurm_accounts:
             args = ["sacctmgr", "-i", "remove", "user", self.username, f"account={account}"]
             print(" ".join(args))
-            # sp.run(args, capture_output=False, check=True)
+            # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
             print(f"Not removing {self.username} from {account}, because {account} is not managed.")
 
