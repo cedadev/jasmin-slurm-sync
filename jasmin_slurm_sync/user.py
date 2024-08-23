@@ -1,10 +1,13 @@
 import functools
+import itertools
+import logging
+import pwd
+import time
 import typing
 
-from . import settings as settings_module, utils, errors
-import itertools
-import time
-import pwd
+from . import errors
+from . import settings as settings_module
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +23,13 @@ class User:
         settings: settings_module.SettingsSchema,
     ) -> None:
         self.ldap_user = ldap_user
-        self.slurm_user = slurm_user
+        self.slurm_accounts = slurm_accounts
         self.username: str = self.ldap_user["cn"][0]
         self.settings: settings_module.SettingsSchema = settings
 
-        self.managed_slurm_accounts = set(itertools.chain.from_iterable(self.settings.ldap_tag_mapping.values()))
+        self.managed_slurm_accounts = set(
+            itertools.chain.from_iterable(self.settings.ldap_tag_mapping.values())
+        )
 
     @functools.cached_property
     def existing_slurm_accounts(self) -> set[str]:
@@ -35,7 +40,11 @@ class User:
     def expected_slurm_accounts(self) -> set[str]:
         """Get the list of SLURM accounts which the user is expected to have."""
         known_tags = self.settings.ldap_tag_mapping.keys()
-        expected_tags = itertools.chain.from_iterable(self.settings.ldap_tag_mapping[x] for x in self.ldap_user['description'] if x in known_tags)
+        expected_tags = itertools.chain.from_iterable(
+            self.settings.ldap_tag_mapping[x]
+            for x in self.ldap_user["description"]
+            if x in known_tags
+        )
         return set(expected_tags)
 
     @property
@@ -51,20 +60,42 @@ class User:
     def add_user_to_account(self, account: str) -> None:
         """Add the user to a given SLURM account."""
         if account in self.managed_slurm_accounts:
-            args = ["sacctmgr", "-i", "add", "user", self.username, f"account={account}"]
+            args = [
+                "sacctmgr",
+                "-i",
+                "add",
+                "user",
+                self.username,
+                f"account={account}",
+            ]
             logger.info("Adding user %s to account %s", self.username, account)
             # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
-            logger.info("Not adding %s to %s, because account is not managed.", self.username, account)
+            logger.info(
+                "Not adding %s to %s, because account is not managed.",
+                self.username,
+                account,
+            )
 
     def remove_user_from_account(self, account: str) -> None:
         """Remove the user from a given SLURM account."""
         if account in self.managed_slurm_accounts:
-            args = ["sacctmgr", "-i", "remove", "user", self.username, f"account={account}"]
+            args = [
+                "sacctmgr",
+                "-i",
+                "remove",
+                "user",
+                self.username,
+                f"account={account}",
+            ]
             logger.info("Removing user %s from account %s", self.username, account)
             # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
-            logger.info("Not removing %s from %s, because account is not managed.", self.username, account)
+            logger.info(
+                "Not removing %s from %s, because account is not managed.",
+                self.username,
+                account,
+            )
 
     def sync_slurm_accounts(self) -> None:
         """Do a full sync of the user's SLURM accounts."""
@@ -72,12 +103,18 @@ class User:
         try:
             pwd.getpwnam(self.username)
         except KeyError as err:
-            logger.warning(f"Unix User %s does not exist. Not syncing SLURM accounts.", self.username)
+            logger.warning(
+                f"Unix User %s does not exist. Not syncing SLURM accounts.",
+                self.username,
+            )
             raise errors.NoUnixUser from err
 
         # Check the user is going to be in the required slurm accounts.
         if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
-            logger.warning(f"User is not in required accounts: %s so won't be synced.", self.expected_slurm_accounts - self.settings.required_slurm_accounts)
+            logger.warning(
+                f"User is not in required accounts: %s so won't be synced.",
+                self.expected_slurm_accounts - self.settings.required_slurm_accounts,
+            )
             raise errors.NotInRequiredAccounts
 
         # Do the sync.

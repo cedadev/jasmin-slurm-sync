@@ -1,15 +1,14 @@
+import collections
 import functools
+import logging
 import os
 import typing
 
 import ldap3
 
-from . import user, settings, utils, errors
-import collections
-import logging
+from . import errors, settings, user, utils
 
 logger = logging.getLogger(__name__)
-
 
 
 class SLURMSyncer:
@@ -60,7 +59,7 @@ class SLURMSyncer:
         accounts_pairs = (x.decode("utf-8").split() for x in accounts_strings)
         valid_pairs = (x for x in accounts_pairs if len(x) == 2)
 
-        # Convert the user: account pairs into a dict of sets 
+        # Convert the user: account pairs into a dict of sets
         # for
         user_accounts = collections.defaultdict(set)
         for user, account in valid_pairs:
@@ -72,8 +71,10 @@ class SLURMSyncer:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
         for ldap_user in self.all_ldap_users:
-            username = ldap_user['cn']
-            yield user.User(username, ldap_user, self.slurm_accounts[username], self.settings)
+            username = ldap_user["cn"]
+            yield user.User(
+                username, ldap_user, self.all_slurm_users[username], self.settings
+            )
 
     def sync(self) -> None:
         """Call sync on each user in turn."""
