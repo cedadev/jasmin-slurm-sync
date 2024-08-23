@@ -12,6 +12,8 @@ class SettingsSchema(typing.TypedDict):
 
     ldap_tag_mapping: dict[str, list[str]]
 
+    required_slurm_accounts: list[str]
+
 
 class SyncSettings:
     def __init__(self, path: str = "config.toml") -> None:

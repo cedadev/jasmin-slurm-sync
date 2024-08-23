@@ -36,7 +36,6 @@ class User:
         expected_tags = itertools.chain.from_iterable(self.settings.ldap_tag_mapping[x] for x in self.ldap_user['description'] if x in known_tags)
         return set(expected_tags)
 
-
     @property
     def to_be_added(self) -> set[str]:
         """Return set of acccounts which user is expected to have but doesn't."""
@@ -70,10 +69,15 @@ class User:
         """Do a full sync of the user's SLURM accounts."""
         # If the user does not exist in linux, SLURM accounts should not be synced for the user.
         try:
-            pws.getpwnam(username)
+            pwd.getpwnam(username)
         except KeyError as err:
-            print(f"User {username} does not exist. Not syncing SLURM accounts.")
+            print(f"Unix User {username} does not exist. Not syncing SLURM accounts.")
             raise errors.NoUnixUser from err
+
+        # Check the user is going to be in the required slurm accounts.
+        if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
+            print(f"User is not in required accounts: {self.expected_slurm_accounts - self.settings.required_slurm_accounts} so won't be synced.")
+            raise errors.NotInRequiredAccounts
 
         # Do the sync.
         for account in self.to_be_added:

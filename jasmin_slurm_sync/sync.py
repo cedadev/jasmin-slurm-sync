@@ -4,7 +4,7 @@ import typing
 
 import ldap3
 
-from . import models, settings, utils, errors
+from . import user, settings, utils, errors
 import collections
 
 
@@ -65,17 +65,17 @@ class SLURMSyncer:
 
         return user_accounts
 
-    def users(self) -> typing.Iterator[models.User]:
+    def users(self) -> typing.Iterator[user.User]:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
         for ldap_user in self.all_ldap_users:
             username = ldap_user['cn']
-            yield models.User(username, ldap_user, self.slurm_accounts[username], self.settings)
+            yield user.User(username, ldap_user, self.slurm_accounts[username], self.settings)
 
     def sync(self) -> None:
         """Call sync on each user in turn."""
         for user in self.users():
             try:
                 user.sync_slurm_accounts()
-            except errors.NoUnixUser:
-                pass
+            except errors.UserSyncError:
+                print(f"User {user.username} failed to sync.")
