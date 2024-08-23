@@ -6,6 +6,9 @@ import ldap3
 
 from . import user, settings, utils, errors
 import collections
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -78,4 +81,4 @@ class SLURMSyncer:
             try:
                 user.sync_slurm_accounts()
             except errors.UserSyncError:
-                print(f"User {user.username} failed to sync.")
+                logger.warning("User %s failed to sync.", user.username)

@@ -6,6 +6,8 @@ import itertools
 import time
 import pwd
 
+logger = logging.getLogger(__name__)
+
 
 class User:
     """Class which represents a JASMINUser and their SLURM Accounts."""
@@ -50,33 +52,32 @@ class User:
         """Add the user to a given SLURM account."""
         if account in self.managed_slurm_accounts:
             args = ["sacctmgr", "-i", "add", "user", self.username, f"account={account}"]
-            print(" ".join(args))
+            logger.info("Adding user %s to account %s", self.username, account)
             # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
-            print(f"Not adding {self.username} to {account}, because {account} is not managed.")
-            print(list(self.managed_slurm_accounts))
+            logger.info("Not adding %s to %s, because account is not managed.", self.username, account)
 
     def remove_user_from_account(self, account: str) -> None:
         """Remove the user from a given SLURM account."""
         if account in self.managed_slurm_accounts:
             args = ["sacctmgr", "-i", "remove", "user", self.username, f"account={account}"]
-            print(" ".join(args))
+            logger.info("Removing user %s from account %s", self.username, account)
             # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
-            print(f"Not removing {self.username} from {account}, because {account} is not managed.")
+            logger.info("Not removing %s from %s, because account is not managed.", self.username, account)
 
     def sync_slurm_accounts(self) -> None:
         """Do a full sync of the user's SLURM accounts."""
         # If the user does not exist in linux, SLURM accounts should not be synced for the user.
         try:
-            pwd.getpwnam(username)
+            pwd.getpwnam(self.username)
         except KeyError as err:
-            print(f"Unix User {username} does not exist. Not syncing SLURM accounts.")
+            logger.warning(f"Unix User %s does not exist. Not syncing SLURM accounts.", self.username)
             raise errors.NoUnixUser from err
 
         # Check the user is going to be in the required slurm accounts.
         if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
-            print(f"User is not in required accounts: {self.expected_slurm_accounts - self.settings.required_slurm_accounts} so won't be synced.")
+            logger.warning(f"User is not in required accounts: %s so won't be synced.", self.expected_slurm_accounts - self.settings.required_slurm_accounts)
             raise errors.NotInRequiredAccounts
 
         # Do the sync.
