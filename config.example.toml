@@ -1,0 +1,8 @@
+ldap_server_addr = ""
+ldap_search_base = ""
+ldap_search_filter =  ""
+
+required_slurm_accounts = [""]
+
+[ldap_tag_mapping]
+"" = [""]
