@@ -5,6 +5,8 @@ import typing
 import ldap3
 
 from . import models, settings
+import subprocess as sp
+import collections
 
 
 class SLURMSyncer:
@@ -35,11 +37,39 @@ class SLURMSyncer:
         )
         return (x["attributes"] for x in response)
 
+    @functools.cached_property
+    def all_slurm_users(self) -> dict[str, set[str]]:
+        args = [
+            "sacctmgr",
+            "show",
+            "user",
+            "withassoc",
+            "format=user%50,account%50",
+            "--noheader",
+        ]
+        cmd_output = sp.run(args, capture_output=True, check=True)
+        # sacctmgr returns a newline seperated list of strings,
+        # padded to 50 characters as specified above.
+        # padding is necessary to ensure no account names are trucated.
+        # we split on the newlines,
+        # strip any whitespace then filter out any blank lines.
+        accounts_strings = cmd_output.stdout.splitlines()
+        accounts_pairs = (x.decode("utf-8").split() for x in accounts_strings)
+        valid_pairs = (x for x in accounts_pairs if len(x) == 2)
+
+        # Convert the user: account pairs into a dict of sets 
+        # for
+        user_accounts = collections.defaultdict(set)
+        for user, account in valid_pairs:
+            user_accounts[user].add(account)
+
+        return user_accounts
+
     def users(self) -> typing.Iterator[models.User]:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
         for ldap_user in self.all_ldap_users:
-            yield models.User(ldap_user, self.settings)
+            yield models.User(ldap_user, self.slurm_accounts['ldap_user'], self.settings)
 
     def sync(self) -> None:
         """Call sync on each user in turn."""

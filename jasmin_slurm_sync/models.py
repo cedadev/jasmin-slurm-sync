@@ -12,9 +12,11 @@ class User:
     def __init__(
         self,
         ldap_user: dict[str, typing.Any],
+        slurm_accounts: set[str],
         settings: settings_module.SettingsSchema,
     ) -> None:
         self.ldap_user = ldap_user
+        self.slurm_user = slurm_user
         self.username: str = self.ldap_user["cn"][0]
         self.settings: settings_module.SettingsSchema = settings
 
@@ -23,25 +25,7 @@ class User:
     @functools.cached_property
     def existing_slurm_accounts(self) -> set[str]:
         """Get the list of SLURM accounts which the user has already."""
-        args = [
-            "sacctmgr",
-            "show",
-            "user",
-            "withassoc",
-            "format=account%50",
-            "--noheader",
-            self.username,
-        ]
-        cmd_output = sp.run(args, capture_output=True, check=True)
-        # sacctmgr returns a newline seperated list of strings,
-        # padded to 50 characters as specified above.
-        # padding is necessary to ensure no account names are trucated.
-        # we split on the newlines,
-        # strip any whitespace then filter out any blank lines.
-        accounts_strings = cmd_output.stdout.splitlines()
-        accounts = set(x.decode("utf-8").strip() for x in accounts_strings)
-        accounts = set(x for x in accounts if x)
-        return accounts
+        return self.slurm_accounts
 
     @functools.cached_property
     def expected_slurm_accounts(self) -> set[str]:
