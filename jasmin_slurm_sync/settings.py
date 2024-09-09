@@ -23,3 +23,5 @@ class SyncSettings:
         typeguard.check_type(toml_dict, SettingsSchema)
         for key, value in toml_dict.items():
             setattr(self, key, value)
+
+        self.required_slurm_accounts = set(self.required_slurm_accounts)

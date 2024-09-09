@@ -91,7 +91,7 @@ class User:
             logger.info("Removing user %s from account %s", self.username, account)
             # utils.run_ratelimited(args, capture_output=False, check=True)
         else:
-            logger.info(
+            logger.debug(
                 "Not removing %s from %s, because account is not managed.",
                 self.username,
                 account,
@@ -113,7 +113,7 @@ class User:
         if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
             logger.warning(
                 f"User is not in required accounts: %s so won't be synced.",
-                self.expected_slurm_accounts - self.settings.required_slurm_accounts,
+                self.settings.required_slurm_accounts - self.expected_slurm_accounts,
             )
             raise errors.NotInRequiredAccounts
 
