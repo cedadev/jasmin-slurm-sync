@@ -12,6 +12,6 @@ def run_ratelimited(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
     Enforces rate limiting.
     """
     result = sp.run(*args, **kwargs)
-    logger.debug("sp.run %s, %s", " ".join(args), kwargs)
+    logger.debug("sp.run %s, %s", args, kwargs)
     time.sleep(1)
     return result

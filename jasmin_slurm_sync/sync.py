@@ -71,7 +71,7 @@ class SLURMSyncer:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
         for ldap_user in self.all_ldap_users:
-            username = ldap_user["cn"]
+            username, = ldap_user["cn"]
             yield user.User(
                 username, ldap_user, self.all_slurm_users[username], self.settings
             )
