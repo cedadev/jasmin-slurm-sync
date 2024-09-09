@@ -2,12 +2,10 @@ import functools
 import itertools
 import logging
 import pwd
-import time
 import typing
 
 from . import errors
 from . import settings as settings_module
-from . import utils
 
 logger = logging.getLogger(__name__)
 
