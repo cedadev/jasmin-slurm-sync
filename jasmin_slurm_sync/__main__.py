@@ -4,7 +4,7 @@ import pathlib
 import time
 
 import pydantic_settings
-import sdnotify
+import sdnotify  # type: ignore
 
 from . import cli
 from . import settings as settings_module

@@ -18,10 +18,24 @@ sdnotify = "^0.3.2"
 mypy = "^1.11.1"
 types-pyyaml = "^6.0.12.20240808"
 types-ldap3 = "^2.9.13.20240205"
+tox = "^4.18.1"
+bandit = "^1.7.9"
+black = "^24.8.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.3"
+coverage = "^7.6.1"
+tblib = "^3.0.0"
+mypy = "^1.11.2"
+types-pyyaml = "^6.0.12.20240808"
+types-ldap3 = "^2.9.13.20240205"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
+strict = true
+warn_unreachable = true
+
 plugins = ["pydantic.mypy"]
