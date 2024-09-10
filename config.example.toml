@@ -4,5 +4,7 @@ ldap_search_filter =  ""
 
 required_slurm_accounts = [""]
 
+daemon_sleep_time = 300
+
 [ldap_tag_mapping]
 "" = [""]

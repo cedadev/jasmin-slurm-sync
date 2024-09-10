@@ -4,8 +4,9 @@ import logging
 import pwd
 import typing
 
-from . import errors
+from . import cli, errors
 from . import settings as settings_module
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -15,15 +16,16 @@ class User:
 
     def __init__(
         self,
-        username: str,
         ldap_user: dict[str, typing.Any],
         slurm_accounts: set[str],
-        settings: settings_module.SettingsSchema,
+        settings: settings_module.SyncSettings,
+        args: cli.SyncArgParser,
     ) -> None:
         self.ldap_user = ldap_user
         self.slurm_accounts = slurm_accounts
         self.username: str = self.ldap_user["cn"][0]
-        self.settings: settings_module.SettingsSchema = settings
+        self.settings = settings
+        self.args = args
 
         self.managed_slurm_accounts = set(
             itertools.chain.from_iterable(self.settings.ldap_tag_mapping.values())
@@ -66,8 +68,15 @@ class User:
                 self.username,
                 f"account={account}",
             ]
-            logger.info("Adding user %s to account %s", self.username, account)
-            # utils.run_ratelimited(args, capture_output=False, check=True)
+            if self.args.dry_run:
+                logger.warning(
+                    "Not adding user %s to account %s, because we are in dry run mode.",
+                    self.username,
+                    account,
+                )
+            else:
+                utils.run_ratelimited(args, capture_output=False, check=True)
+                logger.info("Added user %s to account %s", self.username, account)
         else:
             logger.info(
                 "Not adding %s to %s, because account is not managed.",
@@ -86,8 +95,15 @@ class User:
                 self.username,
                 f"account={account}",
             ]
-            logger.info("Removing user %s from account %s", self.username, account)
-            # utils.run_ratelimited(args, capture_output=False, check=True)
+            if self.args.dry_run:
+                logger.warning(
+                    "Not removing user %s from account %s, because we are in dry run mode.",
+                    self.username,
+                    account,
+                )
+            else:
+                utils.run_ratelimited(args, capture_output=False, check=True)
+                logger.info("Removed user %s from account %s", self.username, account)
         else:
             logger.debug(
                 "Not removing %s from %s, because account is not managed.",

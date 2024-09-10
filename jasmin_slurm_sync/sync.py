@@ -5,7 +5,7 @@ import typing
 
 import ldap3
 
-from . import errors
+from . import cli, errors
 from . import settings as settings_module
 from . import user, utils
 
@@ -15,9 +15,12 @@ logger = logging.getLogger(__name__)
 class SLURMSyncer:
     """Sync users' SLURM Accounts."""
 
-    def __init__(self, settings: settings_module.SyncSettings) -> None:
+    def __init__(
+        self, settings: settings_module.SyncSettings, args: cli.SyncArgParser
+    ) -> None:
         """Initialise a connection to the jasmin acounts portal."""
         self.settings = settings
+        self.args = args
         self.ldap_server = ldap3.Server(
             self.settings.ldap_server_addr,
             get_info=ldap3.ALL,
@@ -74,7 +77,7 @@ class SLURMSyncer:
         for ldap_user in self.all_ldap_users:
             (username,) = ldap_user["cn"]
             yield user.User(
-                username, ldap_user, self.all_slurm_users[username], self.settings
+                ldap_user, self.all_slurm_users[username], self.settings, self.args
             )
 
     def sync(self) -> None:
