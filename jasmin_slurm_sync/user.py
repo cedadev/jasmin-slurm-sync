@@ -118,7 +118,7 @@ class User:
             pwd.getpwnam(self.username)
         except KeyError as err:
             logger.warning(
-                f"Unix User %s does not exist. Not syncing SLURM accounts.",
+                "Unix User %s does not exist. Not syncing SLURM accounts.",
                 self.username,
             )
             raise errors.NoUnixUser from err
@@ -126,7 +126,7 @@ class User:
         # Check the user is going to be in the required slurm accounts.
         if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
             logger.warning(
-                f"User is not in required accounts: %s so won't be synced.",
+                "User is not in required accounts: %s so won't be synced.",
                 self.settings.required_slurm_accounts - self.expected_slurm_accounts,
             )
             raise errors.NotInRequiredAccounts
