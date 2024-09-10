@@ -1,0 +1,14 @@
+[Unit]
+Description=JASMIN SLURM Syncer
+
+[Service]
+Type=notify
+NotifyAccess=main
+
+Restart=always
+RestartSec=10min
+
+ExecStart=python -u -m jasmin_slurm_sync --run_forever
+
+[Install]
+WantedBy=multi-user.target

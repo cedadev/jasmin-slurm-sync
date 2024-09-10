@@ -275,6 +275,16 @@ files = [
 cli = ["click (>=5.0)"]
 
 [[package]]
+name = "sdnotify"
+version = "0.3.2"
+description = "A pure Python implementation of systemd's service notification protocol (sd_notify)"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sdnotify-0.3.2.tar.gz", hash = "sha256:73977fc746b36cc41184dd43c3fe81323e7b8b06c2bb0826c4f59a20c56bb9f1"},
+]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -388,4 +398,4 @@ typing-extensions = ">=3.7.4"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.9"
-content-hash = "71852579297e2c6eb6edad12ea03e4028799b54fc815e9151f11129c410be2f3"
+content-hash = "963a01067c962e764a89a598ea3591a5cc95ab1fe48bb27ffc2d0147bf13850d"
