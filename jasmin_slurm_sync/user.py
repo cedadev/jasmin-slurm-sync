@@ -113,16 +113,6 @@ class User:
 
     def sync_slurm_accounts(self) -> None:
         """Do a full sync of the user's SLURM accounts."""
-        # If the user does not exist in linux, SLURM accounts should not be synced for the user.
-        try:
-            pwd.getpwnam(self.username)
-        except KeyError as err:
-            logger.warning(
-                "Unix User %s does not exist. Not syncing SLURM accounts.",
-                self.username,
-            )
-            raise errors.NoUnixUser from err
-
         # Check the user is going to be in the required slurm accounts.
         if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
             logger.warning(
@@ -131,8 +121,21 @@ class User:
             )
             raise errors.NotInRequiredAccounts
 
-        # Do the sync.
-        for account in self.to_be_added:
-            self.add_user_to_account(account)
-        for account in self.to_be_removed:
-            self.remove_user_from_account(account)
+        # Check if there are any accounts to be added or removed so we don't have to check things if
+        # we have no work to do.
+        if self.to_be_added or self.to_be_removed:
+            # If the user does not exist in linux, SLURM accounts should not be synced for the user.
+            try:
+                pwd.getpwnam(self.username)
+            except KeyError as err:
+                logger.warning(
+                    "Unix User %s does not exist. Not syncing SLURM accounts.",
+                    self.username,
+                )
+                raise errors.NoUnixUser from err
+
+            # Do the sync.
+            for account in self.to_be_added:
+                self.add_user_to_account(account)
+            for account in self.to_be_removed:
+                self.remove_user_from_account(account)
