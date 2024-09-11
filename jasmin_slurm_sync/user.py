@@ -75,8 +75,14 @@ class User:
                     account,
                 )
             else:
-                utils.run_ratelimited(args, capture_output=False, check=True)
+                cmd_output = utils.run_ratelimited(
+                    args, capture_output=True, check=True
+                )
                 logger.info("Added user %s to account %s", self.username, account)
+                if cmd_output.stderr:
+                    logger.error(cmd_output.stderr)
+                if cmd_output.stdout:
+                    logger.debug(cmd_output.stdout)
         else:
             logger.info(
                 "Not adding %s to %s, because account is not managed.",
@@ -102,8 +108,14 @@ class User:
                     account,
                 )
             else:
-                utils.run_ratelimited(args, capture_output=False, check=True)
+                cmd_output = utils.run_ratelimited(
+                    args, capture_output=True, check=True
+                )
                 logger.info("Removed user %s from account %s", self.username, account)
+                if cmd_output.stderr:
+                    logger.error(cmd_output.stderr)
+                if cmd_output.stdout:
+                    logger.debug(cmd_output.stdout)
         else:
             logger.debug(
                 "Not removing %s from %s, because account is not managed.",
