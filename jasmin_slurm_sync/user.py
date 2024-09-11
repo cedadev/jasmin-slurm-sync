@@ -52,7 +52,8 @@ class User:
         if expected_accounts >= self.settings.required_slurm_accounts:
             return expected_accounts
         logger.warning(
-            "User is not in required accounts: %s so will be removed from ALL acounts that the script manages.",
+            "User %s is not in required accounts: %s so will be removed from ALL acounts that the script manages.",
+            self.username,
             self.settings.required_slurm_accounts - expected_accounts,
         )
         return set()
