@@ -45,7 +45,16 @@ class User:
             for x in self.ldap_user["description"]
             if x in known_tags
         )
-        return set(expected_tags)
+        # Check that the user is in the required SLURM accounts for sync.
+        # Otherwise, if they don't have the required accounts, we expect them
+        # to be in NO accounts.
+        if expected_tags >= self.settings.required_slurm_accounts:
+            return set(expected_tags)
+        logger.warning(
+            "User is not in required accounts: %s so will be removed from ALL acounts that the script manages.",
+            self.settings.required_slurm_accounts - self.expected_slurm_accounts,
+        )
+        return set()
 
     @property
     def to_be_added(self) -> set[str]:
@@ -70,7 +79,7 @@ class User:
             ]
             if self.args.dry_run:
                 logger.warning(
-                    "Not adding user %s to account %s, because we are in dry run mode.",
+                    "Would add user %s to account %s, but we are in dry run mode so not doing anything.",
                     self.username,
                     account,
                 )
@@ -103,7 +112,7 @@ class User:
             ]
             if self.args.dry_run:
                 logger.warning(
-                    "Not removing user %s from account %s, because we are in dry run mode.",
+                    "Would remove user %s from account %s, but we are in dry run mode so not doing anything.",
                     self.username,
                     account,
                 )
@@ -125,14 +134,6 @@ class User:
 
     def sync_slurm_accounts(self) -> None:
         """Do a full sync of the user's SLURM accounts."""
-        # Check the user is going to be in the required slurm accounts.
-        if not self.expected_slurm_accounts >= self.settings.required_slurm_accounts:
-            logger.warning(
-                "User is not in required accounts: %s so won't be synced.",
-                self.settings.required_slurm_accounts - self.expected_slurm_accounts,
-            )
-            raise errors.NotInRequiredAccounts
-
         # Check if there are any accounts to be added or removed so we don't have to check things if
         # we have no work to do.
         if self.to_be_added or self.to_be_removed:
