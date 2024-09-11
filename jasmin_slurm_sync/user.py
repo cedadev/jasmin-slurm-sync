@@ -45,11 +45,12 @@ class User:
             for x in self.ldap_user["description"]
             if x in known_tags
         )
+        expected_slurm_accounts = set(expected_tags)
         # Check that the user is in the required SLURM accounts for sync.
         # Otherwise, if they don't have the required accounts, we expect them
         # to be in NO accounts.
-        if expected_tags >= self.settings.required_slurm_accounts:
-            return set(expected_tags)
+        if expected_slurm_accounts >= self.settings.required_slurm_accounts:
+            return expected_slurm_accounts
         logger.warning(
             "User is not in required accounts: %s so will be removed from ALL acounts that the script manages.",
             self.settings.required_slurm_accounts - self.expected_slurm_accounts,
