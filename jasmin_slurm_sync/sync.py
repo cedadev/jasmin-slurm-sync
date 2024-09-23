@@ -16,22 +16,35 @@ class SLURMSyncer:
     """Sync users' SLURM Accounts."""
 
     def __init__(
-        self, settings: settings_module.SyncSettings, args: cli.SyncArgParser
+        self,
+        settings: settings_module.SyncSettings,
+        args: cli.SyncArgParser,
+        *,
+        ldap_server: typing.Optional[ldap3.Server] = None,
+        ldap_conn: typing.Optional[ldap3.Connection] = None,
     ) -> None:
         """Initialise a connection to the jasmin acounts portal."""
         self.settings = settings
         self.args = args
-        self.ldap_server = ldap3.Server(
-            self.settings.ldap_server_addr,
-            get_info=ldap3.ALL,
-        )
-        self.ldap_conn = ldap3.Connection(
-            self.ldap_server,
-            auto_bind=True,
-            auto_encode=True,
-            check_names=True,
-            client_strategy=ldap3.SAFE_RESTARTABLE,
-        )
+
+        if ldap_server is None:
+            self.ldap_server = ldap3.Server(
+                self.settings.ldap_server_addr,
+                get_info=ldap3.ALL,
+            )
+        else:
+            self.ldap_server = ldap_server
+
+        if ldap_conn is None:
+            self.ldap_conn = ldap3.Connection(
+                self.ldap_server,
+                auto_bind=True,
+                auto_encode=True,
+                check_names=True,
+                client_strategy=ldap3.SAFE_RESTARTABLE,
+            )
+        else:
+            self.ldap_conn = ldap_conn
 
     @functools.cached_property
     def all_ldap_users(self) -> typing.Generator[dict[str, typing.Any], None, None]:

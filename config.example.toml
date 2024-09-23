@@ -1,8 +1,8 @@
-ldap_server_addr = "" # The address of your ldap server.
-ldap_search_base = "" # The search base for ldap.
-ldap_search_filter =  "" # A filter to apply to the search.
+ldap_server_addr = "ldap.example.com" # The address of your ldap server.
+ldap_search_base = "ou=people,dc=example,dc=com" # The search base for ldap.
+ldap_search_filter =  "(description=spam:eggs)" # A filter to apply to the search.
 
-required_slurm_accounts = [""] # SLURM accounts (as mapped by ldap_tag_mapping) which are required before user is synced.
+required_slurm_accounts = ["planetexpress"] # SLURM accounts (as mapped by ldap_tag_mapping) which are required before user is synced.
 
 daemon_sleep_time = 300 # Time between syncs when in daemon mode.
 
@@ -11,4 +11,5 @@ daemon_sleep_time = 300 # Time between syncs when in daemon mode.
 # But a slurm account can't be associated with multiple ldap tags,
 # this will cause unxpected behaviour.
 [ldap_tag_mapping]
-"" = [""]
+"spam:eggs" = ["example", "bacon"]
+"spam:ham" = ["cheese"]
