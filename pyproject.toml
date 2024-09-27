@@ -13,6 +13,8 @@ ldap3 = "^2.9.1"
 pydantic-settings = "^2.4.0"
 typed-argument-parser = "^1.10.1"
 sdnotify = "^0.3.2"
+jasmin-account-api-client = {git = "https://github.com/cedadev/jasmin-account-api-client.git", rev = "main", subdirectory = "jasmin-account-api-client"}
+asyncstdlib = "^3.12.5"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.1"

@@ -1,8 +1,11 @@
+import asyncio
 import collections
 import functools
 import logging
 import typing
 
+import asyncstdlib
+import jasmin_account_api_client
 import ldap3
 
 from . import cli, errors
@@ -22,11 +25,15 @@ class SLURMSyncer:
         *,
         ldap_server: typing.Optional[ldap3.Server] = None,
         ldap_conn: typing.Optional[ldap3.Connection] = None,
+        api_client: typing.Optional[
+            jasmin_account_api_client.AuthenticatedClient
+        ] = None,
     ) -> None:
         """Initialise a connection to the jasmin acounts portal."""
         self.settings = settings
         self.args = args
 
+        # Init LDAP server connection.
         if ldap_server is None:
             self.ldap_server = ldap3.Server(
                 self.settings.ldap_server_addr,
@@ -45,6 +52,86 @@ class SLURMSyncer:
             )
         else:
             self.ldap_conn = ldap_conn
+
+        # Init connection to jasmin accounts api.
+        if api_client is None:
+            self.api_client = jasmin_account_api_client.AuthenticatedClient(
+                settings.api_client_base_url
+            )
+            self.api_client.client_credentials_flow(
+                settings.api_client_id,
+                settings.api_client_secret,
+                settings.api_client_scopes,
+            )
+        else:
+            self.api_client = api_client
+
+    @asyncstdlib.cached_property(asyncio.Lock)
+    async def expected_slurm_accounts(self) -> set[tuple[str, str]]:
+        """Get a list of all the SLURM accounts from the projects portal."""
+        client = self.api_client.get_async_httpx_client()
+
+        # Run all the web requests we need to make in paralell.
+        async with asyncio.TaskGroup() as tg:
+            all_services_task = tg.create_task(
+                client.get(self.settings.api_projects_base_url + "services/")
+            )
+            all_projects_task = tg.create_task(
+                client.get(self.settings.api_projects_base_url + "projects/")
+            )
+            all_consortia_task = tg.create_task(
+                client.get(self.settings.api_projects_base_url + "consortia/")
+            )
+
+        # Get the json results and rearrange for easy access.
+        all_services = all_services_task.result().json()
+        all_projects = {x["id"]: x for x in all_projects_task.result().json()}
+        all_consortia = {x["id"]: x for x in all_consortia_task.result().json()}
+
+        accounts = set()
+        # Get a list of all active services.
+        for service in all_services:
+            # Group workspaces are category 1.
+            if service["category"] == 1:
+                for req in service["requirements"]:
+                    # status 50 is 'active'
+                    if req["status"] == 50:
+                        project = all_projects[service["project"]]
+                        consortium = all_consortia[project["consortium"]]
+                        accounts.add((consortium["name"], service["name"]))
+                        accounts.add(("root", consortium["name"]))
+                        break
+        return accounts
+
+    @functools.cached_property
+    def existing_slurm_accounts(self) -> set[tuple[str, str]]:
+        args = [
+            "sacctmgr",
+            "show",
+            "account",
+            "withassoc",
+            "format=parentname%50,account%50",
+            "--noheader",
+        ]
+        cmd_output = utils.run_ratelimited(args, capture_output=True, check=True)
+        # sacctmgr returns a newline seperated list of strings,
+        # padded to 50 characters as specified above.
+        # padding is necessary to ensure no account names are trucated.
+        # we split on the newlines,
+        # strip any whitespace then filter out any blank lines.
+        accounts_strings = cmd_output.stdout.splitlines()
+        accounts_pairs = (x.decode("utf-8").split() for x in accounts_strings)
+        return set(x for x in accounts_pairs if len(x) == 2)
+
+    @asyncstdlib.cached_property(asyncio.Lock)
+    async def accounts_to_be_added(self) -> set[tuple[str, str]]:
+        """Return set of acccounts which are expected to exist but don't."""
+        return (await self.expected_slurm_accounts) - self.existing_slurm_accounts
+
+    @asyncstdlib.cached_property(asyncio.Lock)
+    async def accounts_to_be_removed(self) -> set[tuple[str, str]]:
+        """Return set of accounts which exist but shouldn't"""
+        return self.existing_slurm_accounts - (await self.expected_slurm_accounts)
 
     @functools.cached_property
     def all_ldap_users(self) -> typing.Generator[dict[str, typing.Any], None, None]:
@@ -84,7 +171,7 @@ class SLURMSyncer:
 
         return user_accounts
 
-    def users(self) -> typing.Iterator[user.User]:
+    async def users(self) -> typing.AsyncIterator[user.User]:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
         for ldap_user in self.all_ldap_users:
@@ -93,9 +180,9 @@ class SLURMSyncer:
                 ldap_user, self.all_slurm_users[username], self.settings, self.args
             )
 
-    def sync(self) -> None:
+    async def sync(self) -> None:
         """Call sync on each user in turn."""
-        for user in self.users():
+        async for user in self.users():
             try:
                 user.sync_slurm_accounts()
             except errors.UserSyncError:

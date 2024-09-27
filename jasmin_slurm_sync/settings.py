@@ -20,6 +20,12 @@ class SyncSettings(pydantic_settings.BaseSettings):
 
     daemon_sleep_time: int = 600
 
+    api_client_base_url: str
+    api_client_id: str
+    api_client_secret: str
+    api_client_scopes: list[str]
+    api_projects_base_url: str
+
     @classmethod
     def settings_customise_sources(
         cls,
