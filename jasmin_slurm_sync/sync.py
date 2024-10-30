@@ -8,7 +8,7 @@ import asyncstdlib
 import jasmin_account_api_client
 import ldap3
 
-from . import cli, errors
+from . import account, cli, errors
 from . import settings as settings_module
 from . import user, utils
 
@@ -98,8 +98,13 @@ class SLURMSyncer:
                     if req["status"] == 50:
                         project = all_projects[service["project"]]
                         consortium = all_consortia[project["consortium"]]
-                        accounts.add((consortium["name"], service["name"]))
-                        accounts.add(("root", consortium["name"]))
+                        accounts.add(
+                            (consortium["name"], service["name"]),
+                            service.get("fairshare", 1),
+                        )
+                        accounts.add(
+                            ("root", consortium["name"], service.get("fairshare", 1))
+                        )
                         break
         return accounts
 
@@ -110,7 +115,7 @@ class SLURMSyncer:
             "show",
             "account",
             "withassoc",
-            "format=parentname%50,account%50",
+            "format=parentname%50,account%50,fairshare%50",
             "--noheader",
         ]
         cmd_output = utils.run_ratelimited(args, capture_output=True, check=True)
@@ -121,17 +126,16 @@ class SLURMSyncer:
         # strip any whitespace then filter out any blank lines.
         accounts_strings = cmd_output.stdout.splitlines()
         accounts_pairs = (x.decode("utf-8").split() for x in accounts_strings)
-        return set(x for x in accounts_pairs if len(x) == 2)
+        return set(x for x in accounts_pairs if len(x) == 3)
 
     @asyncstdlib.cached_property(asyncio.Lock)
-    async def accounts_to_be_added(self) -> set[tuple[str, str]]:
-        """Return set of acccounts which are expected to exist but don't."""
-        return (await self.expected_slurm_accounts) - self.existing_slurm_accounts
-
-    @asyncstdlib.cached_property(asyncio.Lock)
-    async def accounts_to_be_removed(self) -> set[tuple[str, str]]:
-        """Return set of accounts which exist but shouldn't"""
-        return self.existing_slurm_accounts - (await self.expected_slurm_accounts)
+    async def accounts_to_be_synced(self) -> set[tuple[str, str, str]]:
+        """Return accounts which don't exactly match in both sets."""
+        wrong_accounts = (
+            await self.expected_slurm_accounts
+        ) ^ self.existing_slurm_accounts
+        # Exclude fairshare from the set to deduplicate where fairshare is wrong.
+        return {x[0:2] for x in wrong_accounts}
 
     @functools.cached_property
     def all_ldap_users(self) -> typing.Generator[dict[str, typing.Any], None, None]:
@@ -180,8 +184,24 @@ class SLURMSyncer:
                 ldap_user, self.all_slurm_users[username], self.settings, self.args
             )
 
+    async def accounts(self) -> typing.AsyncIterable[account.Account]:
+        """Get list of SLURM accounts which should be synced."""
+        existing_slurm_accounts = {x[1]: x for x in self.existing_slurm_accounts}
+        expected_slurm_accounts = {x[1]: x for x in self.expected_slurm_accounts}
+        for account_tuple in await self.accounts_to_be_synced:
+            yield account.Account(
+                account_tuple,
+                existing_slurm_accounts,
+                expected_slurm_accounts,
+                self.settings,
+                self.args,
+            )
+
     async def sync(self) -> None:
         """Call sync on each user in turn."""
+        async for account in self.accounts():
+            account.sync_account()
+
         async for user in self.users():
             try:
                 user.sync_slurm_accounts()
