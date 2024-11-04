@@ -41,34 +41,107 @@ class Account:
             self.expected = None
 
     def create_account(self):
-        if self.args.dry_run:
-            logger.warning(
-                "Would create account %s, but we are in dry run mode so not doing anything.",
+        if account not in self.settings.unmanaged_accounts:
+            args = [
+                "sacctmgr",
+            ]
+            if self.args.dry_run:
+                logger.warning(
+                    "Would create account %s, but we are in dry run mode so not doing anything.",
+                    self.account_name,
+                )
+            else:
+                cmd_output = utils.run_ratelimited(
+                    args, capture_output=True, check=True
+                )
+                logger.info("Created account %s", self.account_name)
+                if cmd_output.stderr:
+                    logger.error(cmd_output.stderr)
+                if cmd_output.stdout:
+                    logger.debug(cmd_output.stdout)
+        else:
+            logger.info(
+                "Not creating account %s, because account is not managed.",
                 self.account_name,
             )
 
     def deactivate_account(self):
-        if self.args.dry_run:
-            logger.warning(
-                "Would deactivate account %s, but we are in dry run mode so not doing anything.",
+        if account not in self.settings.unmanaged_accounts:
+            args = [
+                "sacctmgr",
+            ]
+            if self.args.dry_run:
+                logger.warning(
+                    "Would deactivate account %s, but we are in dry run mode so not doing anything.",
+                    self.account_name,
+                )
+            else:
+                cmd_output = utils.run_ratelimited(
+                    args, capture_output=True, check=True
+                )
+                logger.info("Deactivated account %s", self.account_name)
+                if cmd_output.stderr:
+                    logger.error(cmd_output.stderr)
+                if cmd_output.stdout:
+                    logger.debug(cmd_output.stdout)
+        else:
+            logger.info(
+                "Not deactivating account %s, because account is not managed.",
                 self.account_name,
-            )
 
     def update_fairshare(self):
-        if self.args.dry_run:
-            logger.warning(
-                "Would change fairshare of account %s to %s, but we are in dry run mode so not doing anything.",
+        if account not in self.settings.unmanaged_accounts:
+            args = [
+                "sacctmgr",
+            ]
+            if self.args.dry_run:
+                logger.warning(
+                    "Would change fairshare of account %s to %s, but we are in dry run mode so not doing anything.",
+                    self.account_name,
+                    self.expected.fairshare,
+                )
+            else:
+                cmd_output = utils.run_ratelimited(
+                    args, capture_output=True, check=True
+                )
+                logger.info("Changed fairshare of account %s to %s", self.account_name, self.expected.fairshare)
+                if cmd_output.stderr:
+                    logger.error(cmd_output.stderr)
+                if cmd_output.stdout:
+                    logger.debug(cmd_output.stdout)
+        else:
+            logger.info(
+                "Not changing fairshare of account %s to %s, because account is not managed.",
                 self.account_name,
                 self.expected.fairshare,
-            )
+                )
 
     def update_parent(self):
-        if self.args.dry_run:
-            logger.warning(
-                "Would update parent of account %s to %s, but we are in dry run mode so not doing anything.",
+        if account not in self.settings.unmanaged_accounts:
+            args = [
+                "sacctmgr",
+            ]
+            if self.args.dry_run:
+                logger.warning(
+                    "Would change parent of account %s to %s, but we are in dry run mode so not doing anything.",
+                    self.account_name,
+                    self.expected.parent,
+                )
+            else:
+                cmd_output = utils.run_ratelimited(
+                    args, capture_output=True, check=True
+                )
+                logger.info("Changed parent of account %s to %s.", self.account_name, self.expected.parent)
+                if cmd_output.stderr:
+                    logger.error(cmd_output.stderr)
+                if cmd_output.stdout:
+                    logger.debug(cmd_output.stdout)
+        else:
+            logger.info(
+                "Not changing parent of account %s to %s, because account is not managed.",
                 self.account_name,
                 self.expected.parent,
-            )
+                )
 
     def sync_account(self):
         """Sync account to make sure SLURM is the same as the projects portal."""
