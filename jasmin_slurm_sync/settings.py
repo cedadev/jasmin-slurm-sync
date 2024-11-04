@@ -26,6 +26,9 @@ class SyncSettings(pydantic_settings.BaseSettings):
     api_client_scopes: list[str]
     api_projects_base_url: str
 
+    unmanaged_accounts: list[str]
+    unmanaged_users: list[str]
+
     @classmethod
     def settings_customise_sources(
         cls,

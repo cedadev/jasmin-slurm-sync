@@ -192,28 +192,38 @@ class SLURMSyncer:
         # Convert each user model to the user class.
         for ldap_user in self.all_ldap_users:
             (username,) = ldap_user["cn"]
-            yield user.User(
-                ldap_user, self.all_slurm_users[username], self.settings, self.args
-            )
+            if username not in self.settings.unmanaged_users:
+                yield user.User(
+                    ldap_user, self.all_slurm_users[username], self.settings, self.args
+                )
 
-    async def accounts(self) -> typing.AsyncIterable[account.Account]:
+    async def accounts(
+        self, filter_parent=typing.Optional[str]
+    ) -> typing.AsyncIterable[account.Account]:
         """Get list of SLURM accounts which should be synced."""
         expected = await self.expected_slurm_accounts
 
         for account_name in await self.accounts_to_be_synced:
-            yield account.Account(
-                account_name=account_name,
-                existing_slurm_accounts=self.existing_slurm_accounts,
-                expected_slurm_accounts=expected,
-                settings=self.settings,
-                args=self.args,
-            )
+            if account_name not in self.settings.unmanaged_accounts:
+                yield account.Account(
+                    account_name=account_name,
+                    existing_slurm_accounts=self.existing_slurm_accounts,
+                    expected_slurm_accounts=expected,
+                    settings=self.settings,
+                    args=self.args,
+                )
 
     async def sync(self) -> None:
-        """Call sync on each user in turn."""
+        """Call sync on each account and user in turn."""
+        # Sync root accounts first so they are available when other accounts are created.
+        async for account in self.accounts():
+            if getattr(account.expected, "parent", None) == "root":
+                account.sync_account()
+        # Then sync all acounts
         async for account in self.accounts():
             account.sync_account()
 
+        # Then sync the users.
         async for user in self.users():
             try:
                 user.sync_slurm_accounts()
