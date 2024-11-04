@@ -53,7 +53,7 @@ class Account:
                 "account",
                 f"name={self.account_name}",
                 f"parent={expected.parent}",
-                f"fairshare={expected.fairshare",
+                f"fairshare={expected.fairshare}",
             ]
             if self.args.dry_run:
                 logger.warning(
@@ -115,7 +115,7 @@ class Account:
                 "where",
                 f"name={self.account_name}",
                 "set",
-                f"fairshare={expected.fairshare}"
+                f"fairshare={expected.fairshare}",
             ]
             if self.args.dry_run:
                 logger.warning(
