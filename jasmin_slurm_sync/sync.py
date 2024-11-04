@@ -24,8 +24,6 @@ class SLURMSyncer:
         settings: settings_module.SyncSettings,
         args: cli.SyncArgParser,
         *,
-        ldap_server: typing.Optional[ldap3.Server] = None,
-        ldap_conn: typing.Optional[ldap3.Connection] = None,
         api_client: typing.Optional[
             jasmin_account_api_client.AuthenticatedClient
         ] = None,
@@ -33,26 +31,6 @@ class SLURMSyncer:
         """Initialise a connection to the jasmin acounts portal."""
         self.settings = settings
         self.args = args
-
-        # Init LDAP server connection.
-        if ldap_server is None:
-            self.ldap_server = ldap3.Server(
-                self.settings.ldap_server_addr,
-                get_info=ldap3.ALL,
-            )
-        else:
-            self.ldap_server = ldap_server
-
-        if ldap_conn is None:
-            self.ldap_conn = ldap3.Connection(
-                self.ldap_server,
-                auto_bind=True,
-                auto_encode=True,
-                check_names=True,
-                client_strategy=ldap3.SAFE_RESTARTABLE,
-            )
-        else:
-            self.ldap_conn = ldap_conn
 
         # Init connection to jasmin accounts api.
         if api_client is None:
@@ -149,15 +127,54 @@ class SLURMSyncer:
 
         return {x.name for x in wrong_accounts}
 
-    @functools.cached_property
-    def all_ldap_users(self) -> typing.Generator[dict[str, typing.Any], None, None]:
+    @asyncstdlib.cached_property(asyncio.Lock)
+    async def portal_slurm_users(self):
         """Get the list of users from the JASMIN accounts portal."""
-        _status, _result, response, _request = self.ldap_conn.search(
-            self.settings.ldap_search_base,
-            self.settings.ldap_search_filter,
-            attributes=ldap3.ALL_ATTRIBUTES,
-        )
-        return (x["attributes"] for x in response)
+        client = self.api_client.get_async_httpx_client()
+        category, service = self.settings.list_users_role.split("/")
+
+        role_user_list = (
+            await client.get(
+                self.settings.api_accounts_base_url
+                + f"categories/{category}/services/{service}/roles/USER/"
+            )
+        ).json()["accesses"]
+        usernames = [x["user"]["username"] for x in role_user_list]
+        return set(usernames)
+
+    @asyncstdlib.cached_property(asyncio.Lock)
+    async def portal_user_services(self):
+        """Get a list of services for each user."""
+        client = self.api_client.get_async_httpx_client()
+        tasks = []
+        async with asyncio.TaskGroup() as tg:
+            for username in await self.portal_slurm_users:
+                tasks.append(
+                    tg.create_task(
+                        client.get(
+                            self.settings.api_accounts_base_url
+                            + f"users/{username}/grants/"
+                        ),
+                        name=username,
+                    )
+                )
+        user_accounts = collections.defaultdict(set)
+        for task in tasks:
+            result = task.result().json()
+            username = task.get_name()
+            for grant in result:
+                if grant["role"]["name"] == "USER":
+                    # Add all the group workspaces.
+                    if grant["service"]["category"]["name"] == "group_workspaces":
+                        user_accounts[username].add(grant["service"]["name"])
+                    # Add extra mappings.
+                    service_name = f"{grant['service']['category']['name']}/{grant['service']['name']}"
+                    if service_name in self.settings.extra_account_mapping.keys():
+                        user_accounts[username].update(
+                            self.settings.extra_account_mapping[service_name]
+                        )
+
+        return user_accounts
 
     @functools.cached_property
     def all_slurm_users(self) -> dict[str, set[str]]:
@@ -190,11 +207,14 @@ class SLURMSyncer:
     async def users(self) -> typing.AsyncIterator[user.User]:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
-        for ldap_user in self.all_ldap_users:
-            (username,) = ldap_user["cn"]
+        for username in await self.portal_slurm_users:
             if username not in self.settings.unmanaged_users:
                 yield user.User(
-                    ldap_user, self.all_slurm_users[username], self.settings, self.args
+                    username=username,
+                    portal_services=(await self.portal_user_services)[username],
+                    slurm_accounts=self.all_slurm_users[username],
+                    settings=self.settings,
+                    args=self.args,
                 )
 
     async def accounts(

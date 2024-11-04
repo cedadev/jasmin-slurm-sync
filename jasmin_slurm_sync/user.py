@@ -16,20 +16,17 @@ class User:
 
     def __init__(
         self,
-        ldap_user: dict[str, typing.Any],
+        username: str,
+        portal_services: set[str],
         slurm_accounts: set[str],
         settings: settings_module.SyncSettings,
         args: cli.SyncArgParser,
     ) -> None:
-        self.ldap_user = ldap_user
+        self.portal_services = portal_services
         self.slurm_accounts = slurm_accounts
-        self.username: str = self.ldap_user["cn"][0]
+        self.username = username
         self.settings = settings
         self.args = args
-
-        self.managed_slurm_accounts = set(
-            itertools.chain.from_iterable(self.settings.ldap_tag_mapping.values())
-        )
 
     @functools.cached_property
     def existing_slurm_accounts(self) -> set[str]:
@@ -39,24 +36,7 @@ class User:
     @functools.cached_property
     def expected_slurm_accounts(self) -> set[str]:
         """Get the list of SLURM accounts which the user is expected to have."""
-        known_tags = self.settings.ldap_tag_mapping.keys()
-        expected_tags = itertools.chain.from_iterable(
-            self.settings.ldap_tag_mapping[x]
-            for x in self.ldap_user["description"]
-            if x in known_tags
-        )
-        expected_accounts = set(expected_tags)
-        # Check that the user is in the required SLURM accounts for sync.
-        # Otherwise, if they don't have the required accounts, we expect them
-        # to be in NO accounts.
-        if expected_accounts >= self.settings.required_slurm_accounts:
-            return expected_accounts
-        logger.warning(
-            "User %s is not in required accounts: %s so will be removed from ALL acounts that the script manages.",
-            self.username,
-            self.settings.required_slurm_accounts - expected_accounts,
-        )
-        return set()
+        return self.portal_services
 
     @property
     def to_be_added(self) -> set[str]:
@@ -70,7 +50,7 @@ class User:
 
     def add_user_to_account(self, account: str) -> None:
         """Add the user to a given SLURM account."""
-        if account in self.managed_slurm_accounts:
+        if account not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
                 "-i",
@@ -103,7 +83,7 @@ class User:
 
     def remove_user_from_account(self, account: str) -> None:
         """Remove the user from a given SLURM account."""
-        if account in self.managed_slurm_accounts:
+        if account not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
                 "-i",

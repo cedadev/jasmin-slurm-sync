@@ -10,14 +10,6 @@ class SyncSettings(pydantic_settings.BaseSettings):
 
     model_config = pydantic_settings.SettingsConfigDict(toml_file="config.toml")
 
-    ldap_server_addr: str
-    ldap_search_base: str
-    ldap_search_filter: str
-
-    ldap_tag_mapping: dict[str, list[str]]
-
-    required_slurm_accounts: set[str]
-
     daemon_sleep_time: int = 600
 
     api_client_base_url: str
@@ -25,9 +17,14 @@ class SyncSettings(pydantic_settings.BaseSettings):
     api_client_secret: str
     api_client_scopes: list[str]
     api_projects_base_url: str
+    api_accounts_base_url: str
 
     unmanaged_accounts: list[str]
     unmanaged_users: list[str]
+
+    list_users_role: str
+
+    extra_account_mapping: dict[str, list[str]]
 
     @classmethod
     def settings_customise_sources(
