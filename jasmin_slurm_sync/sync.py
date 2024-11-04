@@ -128,6 +128,12 @@ class SLURMSyncer:
         return {x.name for x in wrong_accounts}
 
     @asyncstdlib.cached_property(asyncio.Lock)
+    async def users_to_be_synced(self) -> set[str]:
+        """Return list of all users who should be synced.
+        This is all the ones from both SLURM AND the accounts portal."""
+        return (await self.portal_slurm_users) | set(self.all_slurm_users.keys())
+
+    @asyncstdlib.cached_property(asyncio.Lock)
     async def portal_slurm_users(self):
         """Get the list of users from the JASMIN accounts portal."""
         client = self.api_client.get_async_httpx_client()
@@ -207,12 +213,14 @@ class SLURMSyncer:
     async def users(self) -> typing.AsyncIterator[user.User]:
         """Get list of users whose SLURM accounts should be synced."""
         # Convert each user model to the user class.
-        for username in await self.portal_slurm_users:
+        for username in await self.users_to_be_synced:
             if username not in self.settings.unmanaged_users:
                 yield user.User(
                     username=username,
-                    portal_services=(await self.portal_user_services)[username],
-                    slurm_accounts=self.all_slurm_users[username],
+                    portal_services=(await self.portal_user_services).get(
+                        username, set()
+                    ),
+                    slurm_accounts=self.all_slurm_users.get(username, set()),
                     settings=self.settings,
                     args=self.args,
                 )
