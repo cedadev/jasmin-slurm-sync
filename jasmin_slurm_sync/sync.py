@@ -46,7 +46,7 @@ class SLURMSyncer:
             self.api_client = api_client
 
     @asyncstdlib.cached_property(asyncio.Lock)
-    async def expected_slurm_accounts(self) -> set[tuple[str, str]]:
+    async def expected_slurm_accounts(self) -> set[account.AccountInfo]:
         """Get a list of all the SLURM accounts from the projects portal."""
         client = self.api_client.get_async_httpx_client()
 
@@ -92,7 +92,7 @@ class SLURMSyncer:
         return accounts
 
     @functools.cached_property
-    def existing_slurm_accounts(self) -> set[tuple[str, str]]:
+    def existing_slurm_accounts(self) -> set[account.AccountInfo]:
         args = [
             "sacctmgr",
             "show",
@@ -119,7 +119,7 @@ class SLURMSyncer:
         return set(filtered_account_tuples)
 
     @asyncstdlib.cached_property(asyncio.Lock)
-    async def accounts_to_be_synced(self) -> set[tuple[str, str, str]]:
+    async def accounts_to_be_synced(self) -> set[str]:
         """Return accounts which don't exactly match in both sets."""
         wrong_accounts = (
             await self.expected_slurm_accounts
@@ -134,7 +134,7 @@ class SLURMSyncer:
         return (await self.portal_slurm_users) | set(self.all_slurm_users.keys())
 
     @asyncstdlib.cached_property(asyncio.Lock)
-    async def portal_slurm_users(self):
+    async def portal_slurm_users(self) -> set[str]:
         """Get the list of users from the JASMIN accounts portal."""
         client = self.api_client.get_async_httpx_client()
         category, service = self.settings.list_users_role.split("/")
@@ -149,7 +149,7 @@ class SLURMSyncer:
         return set(usernames)
 
     @asyncstdlib.cached_property(asyncio.Lock)
-    async def portal_user_services(self):
+    async def portal_user_services(self) -> dict[str, set[str]]:
         """Get a list of services for each user."""
         client = self.api_client.get_async_httpx_client()
         tasks = []
@@ -225,9 +225,7 @@ class SLURMSyncer:
                     args=self.args,
                 )
 
-    async def accounts(
-        self, filter_parent=typing.Optional[str]
-    ) -> typing.AsyncIterable[account.Account]:
+    async def accounts(self) -> typing.AsyncIterable[account.Account]:
         """Get list of SLURM accounts which should be synced."""
         expected = await self.expected_slurm_accounts
 
