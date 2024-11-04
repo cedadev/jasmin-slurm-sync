@@ -49,6 +49,11 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "create",
+                "account",
+                f"name={self.account_name}",
+                f"parent={expected.parent}",
+                f"fairshare={expected.fairshare",
             ]
             if self.args.dry_run:
                 logger.warning(
@@ -74,6 +79,12 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "modify",
+                "account",
+                "where",
+                f"name={self.account_name}",
+                "set",
+                "maxjobs=0",
             ]
             if self.args.dry_run:
                 logger.warning(
@@ -99,6 +110,12 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "modify",
+                "account",
+                "where",
+                f"name={self.account_name}",
+                "set",
+                f"fairshare={expected.fairshare}"
             ]
             if self.args.dry_run:
                 logger.warning(
@@ -130,6 +147,12 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "modify",
+                "account",
+                "where",
+                f"name={self.account_name}",
+                "set",
+                f"parent={expected.parent}",
             ]
             if self.args.dry_run:
                 logger.warning(
