@@ -2,6 +2,7 @@ import asyncio
 import collections
 import functools
 import logging
+import textwrap
 import typing
 
 import asyncstdlib
@@ -76,36 +77,40 @@ class SLURMSyncer:
             all_services_task = tg.create_task(
                 client.get(self.settings.api_projects_base_url + "services/")
             )
-            all_projects_task = tg.create_task(
-                client.get(self.settings.api_projects_base_url + "projects/")
-            )
             all_consortia_task = tg.create_task(
                 client.get(self.settings.api_projects_base_url + "consortia/")
             )
 
         # Get the json results and rearrange for easy access.
         all_services = all_services_task.result().json()
-        all_projects = {x["id"]: x for x in all_projects_task.result().json()}
         all_consortia = {x["id"]: x for x in all_consortia_task.result().json()}
+
+        # Get only services which are group workspaces (category 1) and have active requirements.
+        interested_services = [
+            x
+            for x in all_services
+            if x["has_active_requirements"] and (x["category"] == 1)
+        ]
 
         accounts = set()
         # Get a list of all active services.
-        for service in all_services:
+        for service in interested_services:
             # Group workspaces are category 1.
-            if service["category"] == 1:
-                for req in service["requirements"]:
-                    # status 50 is 'active'
-                    if req["status"] == 50:
-                        project = all_projects[service["project"]]
-                        consortium = all_consortia[project["consortium"]]
-                        accounts.add(
-                            (consortium["name"], service["name"]),
-                            service.get("fairshare", 1),
-                        )
-                        accounts.add(
-                            ("root", consortium["name"], service.get("fairshare", 1))
-                        )
-                        break
+            consortium = all_consortia[service["consortium"]]
+            accounts.add(
+                account.AccountInfo(
+                    name=service["name"],
+                    parent=consortium["name"],
+                    fairshare=int(service.get("project_fairshare", 1)),
+                )
+            )
+            accounts.add(
+                account.AccountInfo(
+                    name=consortium["name"],
+                    parent="root",
+                    fairshare=int(service.get("consortium_fairshare", 1)),
+                )
+            )
         return accounts
 
     @functools.cached_property
@@ -116,6 +121,7 @@ class SLURMSyncer:
             "account",
             "withassoc",
             "format=parentname%50,account%50,fairshare%50",
+            "--parsable2",
             "--noheader",
         ]
         cmd_output = utils.run_ratelimited(args, capture_output=True, check=True)
@@ -124,9 +130,15 @@ class SLURMSyncer:
         # padding is necessary to ensure no account names are trucated.
         # we split on the newlines,
         # strip any whitespace then filter out any blank lines.
-        accounts_strings = cmd_output.stdout.splitlines()
-        accounts_pairs = (x.decode("utf-8").split() for x in accounts_strings)
-        return set(x for x in accounts_pairs if len(x) == 3)
+        account_bytes = cmd_output.stdout.splitlines()
+        account_lists = [x.decode("utf-8").split("|") for x in account_bytes]
+        account_tuples = [
+            account.AccountInfo(name=x[1], parent=x[0], fairshare=int(x[2]))
+            for x in account_lists
+        ]
+        # filter out accounts which have no parent: this isn't possible.
+        filtered_account_tuples = [x for x in account_tuples if x.parent]
+        return set(filtered_account_tuples)
 
     @asyncstdlib.cached_property(asyncio.Lock)
     async def accounts_to_be_synced(self) -> set[tuple[str, str, str]]:
@@ -134,8 +146,8 @@ class SLURMSyncer:
         wrong_accounts = (
             await self.expected_slurm_accounts
         ) ^ self.existing_slurm_accounts
-        # Exclude fairshare from the set to deduplicate where fairshare is wrong.
-        return {x[0:2] for x in wrong_accounts}
+
+        return {x.name for x in wrong_accounts}
 
     @functools.cached_property
     def all_ldap_users(self) -> typing.Generator[dict[str, typing.Any], None, None]:
@@ -186,15 +198,15 @@ class SLURMSyncer:
 
     async def accounts(self) -> typing.AsyncIterable[account.Account]:
         """Get list of SLURM accounts which should be synced."""
-        existing_slurm_accounts = {x[1]: x for x in self.existing_slurm_accounts}
-        expected_slurm_accounts = {x[1]: x for x in self.expected_slurm_accounts}
-        for account_tuple in await self.accounts_to_be_synced:
+        expected = await self.expected_slurm_accounts
+
+        for account_name in await self.accounts_to_be_synced:
             yield account.Account(
-                account_tuple,
-                existing_slurm_accounts,
-                expected_slurm_accounts,
-                self.settings,
-                self.args,
+                account_name=account_name,
+                existing_slurm_accounts=self.existing_slurm_accounts,
+                expected_slurm_accounts=expected,
+                settings=self.settings,
+                args=self.args,
             )
 
     async def sync(self) -> None:

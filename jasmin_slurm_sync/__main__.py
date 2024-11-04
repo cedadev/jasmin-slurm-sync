@@ -31,8 +31,7 @@ async def main() -> None:
         syncer = sync.SLURMSyncer(settings, args)
 
         logger.debug("Do the sync.")
-        print(await syncer.expected_slurm_accounts)
-        # await syncer.sync()
+        await syncer.sync()
 
         if args.run_forever:
             logger.info(
