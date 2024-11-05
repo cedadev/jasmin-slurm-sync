@@ -125,7 +125,7 @@ class Account:
                     "Would change fairshare of account %s to %s (currently %s), but we are in dry run mode so not doing anything.",
                     self.account_name,
                     expected.fairshare,
-                    self.existing.fairshare,
+                    getattr(self.existing, "fairshare", None),
                 )
             else:
                 cmd_output = utils.run_ratelimited(
@@ -164,7 +164,7 @@ class Account:
                     "Would change parent of account %s to %s (currently %s), but we are in dry run mode so not doing anything.",
                     self.account_name,
                     expected.parent,
-                    self.existing.parent,
+                    getattr(self.existing, "parent", None),
                 )
             else:
                 cmd_output = utils.run_ratelimited(
