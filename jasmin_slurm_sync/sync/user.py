@@ -80,7 +80,7 @@ class UserSyncingMixin:
                         )
         # Add the no project account to users who have no other account.
         for username, accounts in user_accounts.items():
-            if len(accounts) == 1:
+            if len(accounts) <= 1:
                 user_accounts[username].add(self.settings.no_project_account)
         return user_accounts
 
