@@ -2,7 +2,7 @@ import collections
 import logging
 import typing
 
-from . import cli, errors
+from . import cli
 from . import settings as settings_module
 from . import utils
 

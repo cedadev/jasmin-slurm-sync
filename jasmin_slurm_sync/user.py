@@ -1,8 +1,6 @@
 import functools
-import itertools
 import logging
 import pwd
-import typing
 
 from . import cli, errors
 from . import settings as settings_module
