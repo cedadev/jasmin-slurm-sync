@@ -2,9 +2,9 @@ import collections
 import logging
 import typing
 
-from . import cli
-from . import settings as settings_module
-from . import utils
+from .. import cli
+from .. import settings as settings_module
+from .. import utils
 
 logger = logging.getLogger(__name__)
 

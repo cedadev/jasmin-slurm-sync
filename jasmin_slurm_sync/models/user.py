@@ -2,9 +2,9 @@ import functools
 import logging
 import pwd
 
-from . import cli, errors
-from . import settings as settings_module
-from . import utils
+from .. import cli, errors
+from .. import settings as settings_module
+from .. import utils
 
 logger = logging.getLogger(__name__)
 
