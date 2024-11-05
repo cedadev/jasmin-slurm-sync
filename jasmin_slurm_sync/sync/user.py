@@ -75,7 +75,10 @@ class UserSyncingMixin:
                         user_accounts[username].update(
                             self.settings.extra_account_mapping[service_name]
                         )
-
+        # Add the no project account to users who have no other account.
+        for accounts in user_accounts.values():
+            if not accounts:
+                accounts.add(self.settings.no_project_account)
         return user_accounts
 
     @functools.cached_property

@@ -15,6 +15,9 @@ unmanaged_accounts = []
 # Names of SLURM users which will not be modified by the script.
 unmanaged_users = []
 
+# Users with no other account will be added to this one
+no_project_account = "no-project"
+
 # Define extra accounts portal services to map to slurm accounts.
 [extra_account_mapping]
 "category/service" = ["slurm-account-name"]
