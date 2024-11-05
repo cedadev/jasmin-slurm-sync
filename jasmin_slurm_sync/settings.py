@@ -22,6 +22,7 @@ class SyncSettings(pydantic_settings.BaseSettings):
     unmanaged_accounts: list[str]
     unmanaged_users: list[str]
     no_project_account: str
+    default_account: str
 
     list_users_role: str
 

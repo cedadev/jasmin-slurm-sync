@@ -61,6 +61,17 @@ class AccountSyncingMixin:
                     fairshare=int(service.get("consortium_fairshare", 1)),
                 )
             )
+        # Add in accounts for default and noprojects so that the manager doesn't delete them.
+        accounts.add(
+            account.AccountInfo(
+                name=self.settings.no_project_account, parent="root", fairshare=1
+            )
+        )
+        accounts.add(
+            account.AccountInfo(
+                name=self.settings.default_account, parent="root", fairshare=1
+            )
+        )
         return accounts
 
     @functools.cached_property

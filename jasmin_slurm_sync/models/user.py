@@ -17,11 +17,13 @@ class User:
         username: str,
         portal_services: set[str],
         slurm_accounts: set[str],
+        existing_default_account: str,
         settings: settings_module.SyncSettings,
         args: cli.SyncArgParser,
     ) -> None:
         self.portal_services = portal_services
         self.slurm_accounts = slurm_accounts
+        self.existing_default_account = existing_default_account
         self.username = username
         self.settings = settings
         self.args = args
@@ -112,6 +114,34 @@ class User:
                 account,
             )
 
+    def update_default_account(self) -> None:
+        """Change the users' default account."""
+        args = [
+            "sacctmgr",
+            "-i",
+            "modify",
+            "user",
+            self.username,
+            f"defaultaccount={self.settings.default_account}",
+        ]
+        if self.args.dry_run:
+            logger.warning(
+                "Change user %s's default account to %s, but we are in dry run mode so not doing anything.",
+                self.username,
+                self.settings.default_account,
+            )
+        else:
+            cmd_output = utils.run_ratelimited(args, capture_output=True, check=True)
+            logger.info(
+                "Changed user %s's default account to %s",
+                self.username,
+                self.settings.default_account,
+            )
+            if cmd_output.stderr:
+                logger.error(cmd_output.stderr)
+            if cmd_output.stdout:
+                logger.debug(cmd_output.stdout)
+
     def sync_slurm_accounts(self) -> None:
         """Do a full sync of the user's SLURM accounts."""
         # Check if there are any accounts to be added or removed so we don't have to check things if
@@ -127,8 +157,14 @@ class User:
                 )
                 raise errors.NoUnixUser from err
 
-            # Do the sync.
+            # Add user to new accounts.
             for account in self.to_be_added:
                 self.add_user_to_account(account)
+
+            # Change the users' default account if required.
+            if self.existing_default_account != self.settings.default_account:
+                self.update_default_account()
+
+            # Remove user from old accounts.
             for account in self.to_be_removed:
                 self.remove_user_from_account(account)

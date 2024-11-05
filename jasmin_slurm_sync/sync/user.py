@@ -60,7 +60,10 @@ class UserSyncingMixin:
                         name=username,
                     )
                 )
-        user_accounts = collections.defaultdict(set)
+        # Pre-populate each users' list of accounts with the default account.
+        user_accounts = collections.defaultdict(
+            functools.partial(set, [self.settings.default_account])
+        )
         for task in tasks:
             result = task.result().json()
             username = task.get_name()
@@ -77,7 +80,7 @@ class UserSyncingMixin:
                         )
         # Add the no project account to users who have no other account.
         for accounts in user_accounts.values():
-            if not accounts:
+            if len(accounts) == 1:
                 accounts.add(self.settings.no_project_account)
         return user_accounts
 
@@ -109,3 +112,21 @@ class UserSyncingMixin:
             user_accounts[user].add(account)
 
         return user_accounts
+
+    @functools.cached_property
+    def all_default_accounts(self) -> dict[str]:
+        """Get a list of all SLURM users, with their default accounts, from SLURM."""
+        args = [
+            "sacctmgr",
+            "show",
+            "user",
+            "withassoc",
+            "format=user%50,defaultaccount%50",
+            "--noheader",
+            "--parsable2",
+        ]
+        cmd_output = utils.run_ratelimited(args, capture_output=True, check=True)
+        user_bytes = cmd_output.stdout.splitlines()
+        user_list = [x.decode("utf-8").split("|") for x in user_bytes]
+        default_accounts = {x[0]: x[1] for x in user_list}
+        return default_accounts

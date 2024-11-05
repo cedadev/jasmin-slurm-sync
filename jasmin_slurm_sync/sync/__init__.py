@@ -1,5 +1,6 @@
 import logging
 import typing
+
 import jasmin_account_api_client
 
 from .. import cli, errors, models
@@ -49,6 +50,9 @@ class SLURMSyncer(account.AccountSyncingMixin, user.UserSyncingMixin):
                         username, set()
                     ),
                     slurm_accounts=self.all_slurm_users.get(username, set()),
+                    existing_default_account=self.all_default_accounts.get(
+                        username, ""
+                    ),
                     settings=self.settings,
                     args=self.args,
                 )
