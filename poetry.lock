@@ -1201,31 +1201,6 @@ doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphin
 test = ["coverage[toml] (>=7)", "mypy (>=1.2.0)", "pytest (>=7)"]
 
 [[package]]
-name = "types-ldap3"
-version = "2.9.13.20240205"
-description = "Typing stubs for ldap3"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "types-ldap3-2.9.13.20240205.tar.gz", hash = "sha256:3b2cdaf071171fb37e79c6dab0d682aa65f2268ea25c749dc96fc2f041adb6b9"},
-    {file = "types_ldap3-2.9.13.20240205-py3-none-any.whl", hash = "sha256:0f3310883d26a386562877791b46f96041eebbd50cc945a5ad935e7fde876cc1"},
-]
-
-[package.dependencies]
-types-pyasn1 = "*"
-
-[[package]]
-name = "types-pyasn1"
-version = "0.6.0.20240913"
-description = "Typing stubs for pyasn1"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "types-pyasn1-0.6.0.20240913.tar.gz", hash = "sha256:a1da054db13d3d4ccfa69c515678154014336ad3d9f9ade01845f9edb1a2bc71"},
-    {file = "types_pyasn1-0.6.0.20240913-py3-none-any.whl", hash = "sha256:95f3cb1fbd63ff91cd0410945f8aeae6b0be359533c00f39d8e17124884157af"},
-]
-
-[[package]]
 name = "types-pyyaml"
 version = "6.0.12.20240917"
 description = "Typing stubs for PyYAML"
@@ -1302,4 +1277,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.9"
-content-hash = "d19a05af15dd319ca36030a4925d79de5274e72f24e6397b834801bde9151a4e"
+content-hash = "be757c4e957f91aa6a2b78ec26f85dacaae7944d5593154e48f2c4f599cec6b7"

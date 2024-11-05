@@ -2,7 +2,7 @@ import collections
 import logging
 import typing
 
-from . import cli, errors
+from . import cli
 from . import settings as settings_module
 from . import utils
 
@@ -49,6 +49,7 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "-i",
                 "create",
                 "account",
                 f"name={self.account_name}",
@@ -79,6 +80,7 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "-i",
                 "modify",
                 "account",
                 "where",
@@ -110,6 +112,7 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "-i",
                 "modify",
                 "account",
                 "where",
@@ -148,6 +151,7 @@ class Account:
         if self.account_name not in self.settings.unmanaged_accounts:
             args = [
                 "sacctmgr",
+                "-i",
                 "modify",
                 "account",
                 "where",

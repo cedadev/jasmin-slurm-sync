@@ -2,12 +2,10 @@ import asyncio
 import collections
 import functools
 import logging
-import textwrap
 import typing
 
 import asyncstdlib
 import jasmin_account_api_client
-import ldap3
 
 from . import account, cli, errors
 from . import settings as settings_module

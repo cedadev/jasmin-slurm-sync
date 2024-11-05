@@ -2,9 +2,6 @@ import asyncio
 import logging
 import os
 import pathlib
-import time
-
-import pydantic_settings
 import sdnotify  # type: ignore
 
 from . import cli
