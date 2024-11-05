@@ -77,9 +77,10 @@ class SLURMSyncer(account.AccountSyncingMixin, user.UserSyncingMixin):
         async for account in self.accounts():
             if getattr(account.expected, "parent", None) == "root":
                 account.sync_account()
-        # Then sync all acounts
+        # Then sync all other acounts
         async for account in self.accounts():
-            account.sync_account()
+            if getattr(account.expected, "parent", None) != "root":
+                account.sync_account()
 
         # Then sync the users.
         async for user in self.users():
