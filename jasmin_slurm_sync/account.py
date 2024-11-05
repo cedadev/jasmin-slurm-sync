@@ -119,9 +119,10 @@ class Account:
             ]
             if self.args.dry_run:
                 logger.warning(
-                    "Would change fairshare of account %s to %s, but we are in dry run mode so not doing anything.",
+                    "Would change fairshare of account %s to %s (currently %s), but we are in dry run mode so not doing anything.",
                     self.account_name,
                     expected.fairshare,
+                    self.existing.fairshare,
                 )
             else:
                 cmd_output = utils.run_ratelimited(
@@ -156,9 +157,10 @@ class Account:
             ]
             if self.args.dry_run:
                 logger.warning(
-                    "Would change parent of account %s to %s, but we are in dry run mode so not doing anything.",
+                    "Would change parent of account %s to %s (currently %s), but we are in dry run mode so not doing anything.",
                     self.account_name,
                     expected.parent,
+                    self.existing.parent,
                 )
             else:
                 cmd_output = utils.run_ratelimited(
