@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import itertools
 
 import asyncstdlib
 import jasmin_account_api_client
@@ -72,6 +73,13 @@ class AccountSyncingMixin:
                 name=self.settings.default_account, parent="root", fairshare=1
             )
         )
+        # Add in manually defined accounts from extra_account_mapping
+        for account_name in set(
+            itertools.chain.from_iterable(self.settings.extra_account_mapping.values())
+        ):
+            accounts.add(
+                account.AccountInfo(name=account_name, parent="root", fairshare=1)
+            )
         return accounts
 
     @functools.cached_property
