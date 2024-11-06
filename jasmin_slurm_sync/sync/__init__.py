@@ -53,6 +53,7 @@ class SLURMSyncer(account.AccountSyncingMixin, user.UserSyncingMixin):
                     existing_default_account=self.all_default_accounts.get(
                         username, ""
                     ),
+                    accounts_available=self.expected_slurm_accounts,
                     settings=self.settings,
                     args=self.args,
                 )

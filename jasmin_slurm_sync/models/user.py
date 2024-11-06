@@ -5,6 +5,7 @@ import pwd
 from .. import cli, errors
 from .. import settings as settings_module
 from .. import utils
+from . import account
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,14 @@ class User:
         portal_services: set[str],
         slurm_accounts: set[str],
         existing_default_account: str,
+        accounts_available: set[account.AccountInfo],
         settings: settings_module.SyncSettings,
         args: cli.SyncArgParser,
     ) -> None:
         self.portal_services = portal_services
         self.slurm_accounts = slurm_accounts
         self.existing_default_account = existing_default_account
+        self.account_names_available = set(x.name for x in accounts_available)
         self.username = username
         self.settings = settings
         self.args = args
@@ -160,7 +163,14 @@ class User:
 
             # Add user to new accounts.
             for account in self.to_be_added:
-                self.add_user_to_account(account)
+                if account in self.account_names_available:
+                    self.add_user_to_account(account)
+                else:
+                    logger.warning(
+                        "Did not add user %s to account %s, as the account does not exist.",
+                        self.username,
+                        account,
+                    )
 
             # Change the users' default account if required.
             if self.existing_default_account != self.settings.default_account:
