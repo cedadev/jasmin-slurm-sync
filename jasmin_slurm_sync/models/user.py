@@ -122,6 +122,7 @@ class User:
             "modify",
             "user",
             self.username,
+            "set",
             f"defaultaccount={self.settings.default_account}",
         ]
         if self.args.dry_run:
