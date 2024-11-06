@@ -78,9 +78,8 @@ class UserSyncingMixin:
                         user_accounts[username].update(
                             self.settings.extra_account_mapping[service_name]
                         )
-        # Add the no project account to users who have no other account.
-        for username, accounts in user_accounts.items():
-            if len(accounts) <= 1:
+            # Add the no project account to users who have no other account.
+            if len(user_accounts[username]) <= 1:
                 user_accounts[username].add(self.settings.no_project_account)
         return user_accounts
 
@@ -114,7 +113,7 @@ class UserSyncingMixin:
         return user_accounts
 
     @functools.cached_property
-    def all_default_accounts(self) -> dict[str]:
+    def all_default_accounts(self) -> dict[str, str]:
         """Get a list of all SLURM users, with their default accounts, from SLURM."""
         args = [
             "sacctmgr",
