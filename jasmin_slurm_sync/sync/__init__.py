@@ -47,7 +47,7 @@ class SLURMSyncer(account.AccountSyncingMixin, user.UserSyncingMixin):
                 yield models.user.User(
                     username=username,
                     portal_services=(await self.portal_user_services).get(
-                        username, set()
+                        username, set([self.settings.inactive_account])
                     ),
                     slurm_accounts=self.all_slurm_users.get(username, set()),
                     existing_default_account=self.all_default_accounts.get(

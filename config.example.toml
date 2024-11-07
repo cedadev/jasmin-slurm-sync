@@ -21,6 +21,9 @@ no_project_account = "no-project"
 # All users will have this account set as their default account.
 default_account = ""
 
+# Users who do not exist in list_users_role, but do exist in SLURM, will be moved to this account.
+inactive_account = ""
+
 # Define extra accounts portal services to map to slurm accounts.
 [extra_account_mapping]
 "category/service" = ["slurm-account-name"]
