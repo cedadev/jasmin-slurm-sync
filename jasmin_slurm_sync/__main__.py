@@ -1,9 +1,7 @@
+import asyncio
 import logging
 import os
 import pathlib
-import time
-
-import pydantic_settings
 import sdnotify  # type: ignore
 
 from . import cli
@@ -20,20 +18,27 @@ logger.info("Starting sync of SLURM users.")
 system_notify.notify(f"MAINPID={os.getpid()}")
 system_notify.notify("READY=1")
 
-while True:
-    logger.debug("Loading settings.")
-    settings = settings_module.load_settings(pathlib.Path(args.config))
 
-    logger.debug("Create syncer.")
-    syncer = sync.SLURMSyncer(settings, args)
+async def main() -> None:
+    while True:
+        logger.debug("Loading settings.")
+        settings = settings_module.load_settings(pathlib.Path(args.config))
 
-    logger.debug("Do the sync.")
-    syncer.sync()
+        logger.debug("Create syncer.")
+        syncer = sync.SLURMSyncer(settings, args)
 
-    if args.run_forever:
-        logger.info("Finished sync, sleeping for %s secs.", settings.daemon_sleep_time)
-        time.sleep(settings.daemon_sleep_time)
-    else:
-        logger.info("Running in one-shot mode. Quitting.")
-        system_notify.notify("STOPPING=1")
-        break
+        logger.debug("Do the sync.")
+        await syncer.sync()
+
+        if args.run_forever:
+            logger.info(
+                "Finished sync, sleeping for %s secs.", settings.daemon_sleep_time
+            )
+            await asyncio.sleep(settings.daemon_sleep_time)
+        else:
+            logger.info("Running in one-shot mode. Quitting.")
+            system_notify.notify("STOPPING=1")
+            break
+
+
+asyncio.run(main())

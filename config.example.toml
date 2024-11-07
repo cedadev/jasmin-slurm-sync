@@ -1,14 +1,29 @@
-ldap_server_addr = "" # The address of your ldap server.
-ldap_search_base = "" # The search base for ldap.
-ldap_search_filter =  "" # A filter to apply to the search.
+api_client_base_url = ""
+api_client_id = ""
+api_client_secret = ""
+api_client_scopes = [""]
 
-required_slurm_accounts = [""] # SLURM accounts (as mapped by ldap_tag_mapping) which are required before user is synced.
+api_projects_base_url = ""
+api_accounts_base_url = ""
 
-daemon_sleep_time = 300 # Time between syncs when in daemon mode.
+# The role we will get a list of users from.
+# Users without this role won't get any accounts
+list_users_role = "category/service"
 
-# A map of ldap tags to slurm accounts.
-# An ldap tag can manage multiple slurm accounts
-# But a slurm account can't be associated with multiple ldap tags,
-# this will cause unxpected behaviour.
-[ldap_tag_mapping]
-"" = [""]
+# Names of SLURM accounts which will not be modified by the script.
+unmanaged_accounts = []
+# Names of SLURM users which will not be modified by the script.
+unmanaged_users = []
+
+# Users with no other account will be added to this one
+no_project_account = "no-project"
+
+# All users will have this account set as their default account.
+default_account = ""
+
+# Users who do not exist in list_users_role, but do exist in SLURM, will be moved to this account.
+inactive_account = ""
+
+# Define extra accounts portal services to map to slurm accounts.
+[extra_account_mapping]
+"category/service" = ["slurm-account-name"]
