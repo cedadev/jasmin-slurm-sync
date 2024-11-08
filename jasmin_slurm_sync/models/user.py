@@ -178,4 +178,15 @@ class User:
 
             # Remove user from old accounts.
             for account in self.to_be_removed:
+                # The default account must be removed last.
+                # If we are trying to remove the default account,
+                # and it's not the last one,
+                # skip the removal.
+                if (
+                    account == self.settings.default_account
+                    and self.to_be_removed != set(self.settings.default_account)
+                ):
+                    continue
+
+                # Otherwise, do the removal.
                 self.remove_user_from_account(account)
