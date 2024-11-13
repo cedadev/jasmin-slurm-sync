@@ -1,25 +1,25 @@
-api_client_base_url = ""
-api_client_id = ""
-api_client_secret = ""
-api_client_scopes = [""]
+api_client_base_url = "https://example.com"
+api_client_id = "name-of-client"
+api_client_secret = "supersecret"
+api_client_scopes = ["foo", "bar"]
 
-api_projects_base_url = ""
-api_accounts_base_url = ""
+api_projects_base_url = "https://projects.example.com/api/"
+api_accounts_base_url = "https://accounts.example.com/api/v1/"
 
 # The role we will get a list of users from.
 # Users without this role won't get any accounts
 list_users_role = "category/service"
 
 # Names of SLURM accounts which will not be modified by the script.
-unmanaged_accounts = []
+unmanaged_accounts = ["foo"]
 # Names of SLURM users which will not be modified by the script.
-unmanaged_users = []
+unmanaged_users = ["alice", "bob"]
 
 # Users with no other account will be added to this one
 no_project_account = "no-project"
 
 # All users will have this account set as their default account.
-default_account = ""
+default_account = "default-account"
 
 # Define extra accounts portal services to map to slurm accounts.
 [extra_account_mapping]
