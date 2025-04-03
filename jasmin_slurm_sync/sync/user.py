@@ -80,8 +80,8 @@ class UserSyncingMixin:
                         else:
                             logger.warning(
                                 "Will not add user %s to account %s, as the account does not exist.",
-                                self.username,
-                                account,
+                                username,
+                                grant["service"]["name"],
                             )
                     # Add extra mappings.
                     service_name = f"{grant['service']['category']['name']}/{grant['service']['name']}"
