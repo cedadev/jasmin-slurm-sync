@@ -82,6 +82,11 @@ class AccountSyncingMixin:
             )
         return accounts
 
+    @asyncstdlib.cached_property(asyncio.Lock)
+    async def account_names_available(self):
+        """Text list of account names which will exist once the syncer has run."""
+        return set(x.name for x in await self.expected_slurm_accounts)
+
     @functools.cached_property
     def existing_slurm_accounts(self) -> set[account.AccountInfo]:
         """Get a list of existing SLURM accounts from SLURM."""

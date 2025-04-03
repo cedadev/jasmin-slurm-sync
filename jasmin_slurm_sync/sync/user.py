@@ -47,6 +47,8 @@ class UserSyncingMixin:
     @asyncstdlib.cached_property(asyncio.Lock)
     async def portal_user_services(self) -> dict[str, set[str]]:
         """Get a list of services for each user."""
+        account_names_available = await self.account_names_available
+
         client = self.api_client.get_async_httpx_client()
         tasks = []
         async with asyncio.TaskGroup() as tg:
@@ -71,7 +73,15 @@ class UserSyncingMixin:
                 if grant["role"]["name"] == "USER":
                     # Add all the group workspaces.
                     if grant["service"]["category"]["name"] == "group_workspaces":
-                        user_accounts[username].add(grant["service"]["name"])
+                        # Check that the GWS account in question will exist.
+                        if grant["service"]["name"] in account_names_available:
+                            user_accounts[username].add(grant["service"]["name"])
+                        else:
+                            logger.warning(
+                                "Will not add user %s to account %s, as the account does not exist.",
+                                self.username,
+                                account,
+                            )
                     # Add extra mappings.
                     service_name = f"{grant['service']['category']['name']}/{grant['service']['name']}"
                     if service_name in self.settings.extra_account_mapping.keys():
