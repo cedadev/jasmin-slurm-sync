@@ -69,6 +69,7 @@ class UserSyncingMixin:
         for task in tasks:
             result = task.result().json()
             username = task.get_name()
+            extra_accounts = set()  # Keep track of extra accounts.
             for grant in result:
                 if grant["role"]["name"] == "USER":
                     # Add all the group workspaces.
@@ -85,11 +86,15 @@ class UserSyncingMixin:
                     # Add extra mappings.
                     service_name = f"{grant['service']['category']['name']}/{grant['service']['name']}"
                     if service_name in self.settings.extra_account_mapping.keys():
+                        # Keep track of extra accounts so we know who to add to the no_project account.
+                        extra_accounts.update(
+                            self.settings.extra_account_mapping[service_name]
+                        )
                         user_accounts[username].update(
                             self.settings.extra_account_mapping[service_name]
                         )
             # Add the no project account to users who have no other account.
-            if len(user_accounts[username]) <= 1:
+            if len(user_accounts[username] - extra_accounts) <= 1:
                 user_accounts[username].add(self.settings.no_project_account)
         return user_accounts
 
