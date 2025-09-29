@@ -50,39 +50,49 @@ class UserSyncingMixin:
         account_names_available = await self.account_names_available
 
         client = self.api_client.get_async_httpx_client()
-
-        all_grants_from_portal = await client.get(
-            self.settings.api_accounts_base_url + "grants/"
-        )
+        tasks = []
+        async with asyncio.TaskGroup() as tg:
+            for username in await self.portal_slurm_users:
+                tasks.append(
+                    tg.create_task(
+                        client.get(
+                            self.settings.api_accounts_base_url
+                            + f"users/{username}/grants/"
+                        ),
+                        name=username,
+                    )
+                )
         # Pre-populate each users' list of accounts with the default account.
         user_accounts = collections.defaultdict(
             functools.partial(set, [self.settings.default_account])
         )
-        for result in all_grants_from_portal:
-            username = result["user"]["username"]
+        for task in tasks:
+            result = task.result().json()
+            username = task.get_name()
             extra_accounts = set()  # Keep track of extra accounts.
-            if result["role"]["name"] == "USER":
-                # Add all the group workspaces.
-                if result["service"]["category"]["name"] == "group_workspaces":
-                    # Check that the GWS account in question will exist.
-                    if result["service"]["name"] in account_names_available:
-                        user_accounts[username].add(result["service"]["name"])
-                    else:
-                        logger.warning(
-                            "Will not add user %s to account %s, as the account does not exist.",
-                            username,
-                            result["service"]["name"],
+            for grant in result:
+                if grant["role"]["name"] == "USER":
+                    # Add all the group workspaces.
+                    if grant["service"]["category"]["name"] == "group_workspaces":
+                        # Check that the GWS account in question will exist.
+                        if grant["service"]["name"] in account_names_available:
+                            user_accounts[username].add(grant["service"]["name"])
+                        else:
+                            logger.warning(
+                                "Will not add user %s to account %s, as the account does not exist.",
+                                username,
+                                grant["service"]["name"],
+                            )
+                    # Add extra mappings.
+                    service_name = f"{grant['service']['category']['name']}/{grant['service']['name']}"
+                    if service_name in self.settings.extra_account_mapping.keys():
+                        # Keep track of extra accounts so we know who to add to the no_project account.
+                        extra_accounts.update(
+                            self.settings.extra_account_mapping[service_name]
                         )
-                # Add extra mappings.
-                service_name = f"{result['service']['category']['name']}/{result['service']['name']}"
-                if service_name in self.settings.extra_account_mapping.keys():
-                    # Keep track of extra accounts so we know who to add to the no_project account.
-                    extra_accounts.update(
-                        self.settings.extra_account_mapping[service_name]
-                    )
-                    user_accounts[username].update(
-                        self.settings.extra_account_mapping[service_name]
-                    )
+                        user_accounts[username].update(
+                            self.settings.extra_account_mapping[service_name]
+                        )
             # Add the no project account to users who have no other account.
             if len(user_accounts[username] - extra_accounts) <= 1:
                 user_accounts[username].add(self.settings.no_project_account)
