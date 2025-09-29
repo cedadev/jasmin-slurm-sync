@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import functools
+import itertools
 import logging
 
 import asyncstdlib
@@ -50,25 +51,20 @@ class UserSyncingMixin:
         account_names_available = await self.account_names_available
 
         client = self.api_client.get_async_httpx_client()
-        tasks = []
-        async with asyncio.TaskGroup() as tg:
-            for username in await self.portal_slurm_users:
-                tasks.append(
-                    tg.create_task(
-                        client.get(
-                            self.settings.api_accounts_base_url
-                            + f"users/{username}/grants/"
-                        ),
-                        name=username,
-                    )
-                )
+        all_grants = await client.get(
+            self.settings.api_accounts_base_url + "grants/"
+        ).json()
+
+        user_grants = dict(
+            itertools.groupby(all_grants, key=lambda x: x["user"]["username"])
+        )
+
         # Pre-populate each users' list of accounts with the default account.
         user_accounts = collections.defaultdict(
             functools.partial(set, [self.settings.default_account])
         )
-        for task in tasks:
-            result = task.result().json()
-            username = task.get_name()
+        for username in await self.portal_slurm_users:
+            result = user_grants["username"]
             extra_accounts = set()  # Keep track of extra accounts.
             for grant in result:
                 if grant["role"]["name"] == "USER":
