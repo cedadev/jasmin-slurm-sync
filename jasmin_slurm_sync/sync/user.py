@@ -55,9 +55,6 @@ class UserSyncingMixin:
             await client.get(self.settings.api_accounts_base_url + "grants/")
         ).json()
 
-        user_grants = dict(
-            itertools.groupby(all_grants, key=lambda x: x["user"]["username"])
-        )
         user_grants = collections.defaultdict(list)
         for grant in all_grants:
             user_grants[grant["user"]["username"]].append(grant)
