@@ -51,20 +51,23 @@ class UserSyncingMixin:
         account_names_available = await self.account_names_available
 
         client = self.api_client.get_async_httpx_client()
-        all_grants = await client.get(
-            self.settings.api_accounts_base_url + "grants/"
+        all_grants = (
+            await client.get(self.settings.api_accounts_base_url + "grants/")
         ).json()
 
         user_grants = dict(
             itertools.groupby(all_grants, key=lambda x: x["user"]["username"])
         )
+        user_grants = collections.defaultdict(list)
+        for grant in all_grants:
+            user_grants[grant["user"]["username"]].append(grant)
 
         # Pre-populate each users' list of accounts with the default account.
         user_accounts = collections.defaultdict(
             functools.partial(set, [self.settings.default_account])
         )
         for username in await self.portal_slurm_users:
-            result = user_grants["username"]
+            result = user_grants[username]
             extra_accounts = set()  # Keep track of extra accounts.
             for grant in result:
                 if grant["role"]["name"] == "USER":
